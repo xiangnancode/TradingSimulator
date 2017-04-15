@@ -4,6 +4,7 @@
 #include <string>
 #include "curl/curl.h"
 #include <ctime>
+#include <unordered_map>
 
 using namespace std;
 
@@ -73,7 +74,17 @@ string to_uppercase(string s) {
 	return s;
 }
 
-void trade() {
+void outputtradelog(string filename, string entry) {
+  ofstream file;
+  file.open("./usersinfo/" + filename, std::ios_base::app);
+  if (!file.is_open()) {
+  	cout << "file did not open.\n";
+  }
+  file << entry;
+  file.close();
+}
+
+void trade(string user, unordered_map<string, int> useraccountinfo) {
 	bool process = false;
 	string buyorsell, symb;
 	int nshares;
@@ -107,15 +118,17 @@ void trade() {
 		now = time(0);
 		gmtm = gmtime(&now);
 	int side = buyorsell.compare("buy") ? -1 : 1;
-	string tradelog = to_string(gmtm->tm_hour - 4) + ":" + to_string(gmtm->tm_min) + ":" + to_string(gmtm->tm_sec);
+	string tradelog = to_string(gmtm->tm_mon + 1) + "-" + to_string(gmtm->tm_mday) + "-" + to_string(gmtm->tm_year + 1900) + ",";
+	tradelog += to_string(gmtm->tm_hour - 4) + ":" + to_string(gmtm->tm_min) + ":" + to_string(gmtm->tm_sec);
 	tradelog += "," + (symb) + "," + to_string(side) + "," + to_string(nshares) + "," + to_string(price) + "\n";
 	cout << "\n" << buyorsell << "ing " << nshares << " share(s) of " << (symb)  << " at $" << price << ".\n\n";
 	cout << "\ntrade log: " << tradelog << endl;
+	outputtradelog(user, tradelog);
 	//return tradelog;
 }
 
 bool checkusername(string username) {
-	ifstream file ("./user/usersinfo");
+	ifstream file ("./usersinfo/usersinfo");
 	string entry;
 	while (file.good()) 
 	{
@@ -134,7 +147,7 @@ bool checkusername(string username) {
 void creataccount(string username, string password, double fund) {
 	cout << "creating account...\n";
 	ofstream file;
-  	file.open("./user/usersinfo", std::ios_base::app);
+  	file.open("./usersinfo/usersinfo", std::ios_base::app);
   	file << "[\n" + username + "\n" + password + "\n" + to_string(fund) + "\n]\n";
   	cout << "user " << username << "created\n";
   	file.close();
@@ -142,7 +155,7 @@ void creataccount(string username, string password, double fund) {
 
  void logintoaccount(string username) {
  	cout << "logging into account...\n";
- 	ifstream file ("./user/usersinfo");
+ 	ifstream file ("./usersinfo/usersinfo");
 	string entry, password;
 	double fund;
 	int count = 0;
@@ -169,6 +182,7 @@ void creataccount(string username, string password, double fund) {
 		}
 	}
 	file.close();
+	unordered_map<string, int> useraccountinfo;
 	while (1) {
 		cout << "menu:\nEnter 1 to check account status\nEnter 2 to trade\nEnter 0 to return to main menu\n";
 		cout << "Please enter: ";
@@ -179,7 +193,7 @@ void creataccount(string username, string password, double fund) {
 			cout << "\naccount status:\n" << "username: " << username  << "\nfund: " << fund << "\n\n";
 			break;
 			case 2:
-			trade();
+			trade(username, useraccountinfo);
 			break;
 			case 0:
 			return;
